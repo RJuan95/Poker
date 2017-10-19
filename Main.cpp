@@ -13,30 +13,46 @@ struct card {
 
 struct deck {
 	card* head;
+	int* array;
+	int capacity;
+	int count;
+};
+
+struct hand {
+	int* array;
+	int capacity;
+	int count;
 };
 
 void first_card(deck*, int);
 void new_card(deck*, int);
 deck* new_deck();
+deck* create_inDeck();
+void add_inDeck(deck*, int);
+hand* create_hand();
 void play_game(deck*, int*);
+void print(deck*);
 
 int* money;
 bool keepPlaying;
+deck* Deck;
+deck* InDeck;
+string input;
 
 int main()
 {
 	int a = 10;
 	money = &a;
 	keepPlaying = true;
-	deck* Deck = new_deck();
-	for (int i = 0; i < 52; i++) {
-		new_card(Deck, i);
-	}
-
+	Deck = new_deck();
+	for (int i = 0; i < 52; i++) { new_card(Deck, i); }
+	
+	InDeck = create_inDeck();
+	hand* Hand = create_hand();
+	
 	while (*money > 0 && keepPlaying == true) {
 		play_game(Deck, &a);
 	}
-
 	system("pause");
 	return 0;
 }
@@ -102,7 +118,77 @@ deck* new_deck() {
 	return list;
 }
 
-void play_game(deck* deck, int* currMoney) {
-	cout << "You currently have $" << *currMoney << endl;
-	*currMoney = *currMoney - 1;
+deck* create_inDeck() {
+	const int INIT_CAP = 52;
+	deck* list = new deck;
+	list->array = new int[INIT_CAP];
+	list->capacity = INIT_CAP;
+	list->count = 0;
+	return list;
+}
+
+void add_inDeck(deck* currDeck, int index) {
+	card* temp = currDeck->head;
+	for (int i = 0; i < index; i++) { temp = temp->next; }
+	if (temp->state != "deck") { return; }
+	if (InDeck->count == InDeck->capacity) {
+		int new_capacity = InDeck->capacity * 2;
+		int* new_array = new int[new_capacity];
+		for (int i = 0; i < 52; i++) { new_array[i] = InDeck->array[i]; }
+		delete[] InDeck->array;
+		InDeck->array = new_array;
+		InDeck->capacity = new_capacity;
+	}
+	InDeck->array[InDeck->count] = index;
+	InDeck->count++;
+}
+
+hand* create_hand() {
+	const int INIT_CAP = 5;
+	hand* list = new hand;
+	list->array = new int[INIT_CAP];
+	list->capacity = INIT_CAP;
+	list->count = 0;
+	return list;
+}
+
+void play_game(deck* currDeck, int* currMoney) {
+	*currMoney = *currMoney - 10;
+	cout << "You currently have $" << *currMoney << " after paying $1 to play this round." << endl;
+	for (int i = 0; i < 52; i++) { add_inDeck(currDeck, i); }
+	cout << endl << "type 'deck' to see the deck." << endl << "Your response : ";
+	while (input != "deck") {
+		getline(cin, input);
+	}
+	if (input == "deck") { print(InDeck); }
+}
+
+void print(deck* thisDeck) {
+	card* temp = Deck->head;
+	cout << "Cards in Deck:" << endl;
+	for (int i = 0; i < 52; i++) { 
+		for (int j = 0; j < thisDeck->count; j++) {
+			if (i == thisDeck->array[j]) {
+				switch (temp->value){
+					case 1:
+						cout << "Ace of " << temp->suit << endl;
+						break;
+					case 11:
+						cout << "Jack of " << temp->suit << endl;
+						break;
+					case 12:
+						cout << "Queen of " << temp->suit << endl;
+						break;
+					case 13:
+						cout << "King of " << temp->suit << endl;
+						break;
+					default:
+						cout << temp->value << " of " << temp->suit << endl;
+						break;
+				}
+				break;
+			}
+		}
+	temp = temp->next;
+	}
 }
