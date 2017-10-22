@@ -60,6 +60,7 @@ int main()
 	while (*money > 0 && keepPlaying == true) {
 		play_game(Deck, &a);
 	}
+	cout << endl << "Game Over" << endl << endl;
 	system("pause");
 	return 0;
 }
