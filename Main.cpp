@@ -291,6 +291,6 @@ void print_hand(hand* currHand) {
 	if (counter == 0 && input2 != "Q") { cout << endl << "You discarded all cards" << endl; }
 	else if (counter == 1) { cout << endl << "You kept 1 card" << endl; }
 	else if (counter == 5) { cout << endl << "You kept all cards" << endl; }
-	else if(counter == 0){}
+	else if (counter == 0) { cout << ""; }
 	else { cout << endl << "You kept " << counter << " cards" << endl; }
 }
