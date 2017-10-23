@@ -1,3 +1,13 @@
+#define _CRTDBG_MAP_ALLOC
+#define _CRTDBG_MAP_ALLOC_NEW
+#include <cstdlib>
+#include <crtdbg.h>
+#ifdef _DEBUG
+#ifndef DBG_NEW
+#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
+#define new DBG_NEW
+#endif
+#endif
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -9,7 +19,7 @@ using namespace std;
 struct card {
 	int value;
 	string suit;
-	string state;
+	//string state;
 	card* next;
 };
 
@@ -35,6 +45,7 @@ hand* create_hand();
 void play_game(deck*, int*);
 void draw_card(deck*, int);
 void remove_card_in_deck(int);
+int win_condition(hand*);
 void print(deck*);
 void print_hand(hand*);
 
@@ -48,6 +59,8 @@ string input2;
 
 int main()
 {
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF |
+		_CRTDBG_LEAK_CHECK_DF);
 	srand(time(NULL));
 	int a = 10;
 	money = &a;
@@ -62,14 +75,15 @@ int main()
 	while (*money > 0 && keepPlaying == true) {
 		play_game(Deck, &a);
 	}
-	cout << endl << "Game Over" << endl << endl;
+	if (keepPlaying == false) { cout << endl << "Thanks for playing" << endl << endl; }
+	else { cout << endl << "Game Over" << endl << endl; }
 	system("pause");
 	return 0;
 }
 
 void first_card(deck* deck, int index) {
 	card* newCard = new card;
-	newCard->value = (index / 4) + 1;
+	newCard->value = (index / 4) + 2;
 	switch (index % 4) {
 	case 0:
 		newCard->suit = "spades";
@@ -84,7 +98,7 @@ void first_card(deck* deck, int index) {
 		newCard->suit = "clubs";
 		break;
 	}
-	newCard->state = "deck";
+	//newCard->state = "deck";
 	newCard->next = deck->head;
 	deck->head = newCard;
 }
@@ -102,7 +116,7 @@ void new_card(deck* deck, int index) {
 	}
 
 	card* newCard = new card;
-	newCard->value = (index / 4) + 1;
+	newCard->value = (index / 4) + 2;
 	switch (index % 4) {
 	case 0:
 		newCard->suit = "spades";
@@ -117,7 +131,7 @@ void new_card(deck* deck, int index) {
 		newCard->suit = "clubs";
 		break;
 	}
-	newCard->state = "deck";
+	//newCard->state = "deck";
 	newCard->next = nullptr;
 	temp->next = newCard;
 }
@@ -166,26 +180,35 @@ void play_game(deck* currDeck, int* currMoney) {
 	*currMoney = *currMoney - 1;
 	input = "none";
 	cout << endl << "You currently have $" << *currMoney << " after paying $1 to play this round." << endl;
-	cout << endl << "type 'deck' to see the deck or 'play' to start a new round." << endl << "Your response : ";
+	cout << endl << "type 'play' to start the round or 'quit' to exit." << endl << "Your response : ";
 	while (input == "none") {
 		getline(cin, input);
-		if (input != "deck" && input != "play") { 
+		if (input != "quit" && input != "play") { 
 			cout << "Sorry that is not a valid response. Try again." << endl << "Your response: ";
 			input = "none"; 
 		}
 	}
 	input2 = "Q";
-	if (input == "deck") { 
-		print(InDeck);
+	if (input == "quit") {
+		keepPlaying = false;
+		return;
 	}
 	else if (input == "play") {
 		for (int i = 0; i < 5; i++) { draw_card(InDeck, i); }
 		print_hand(Hand);
-		cout << endl << "Type in the letter(s) of the card(s) you want to keep or just press enter to discard all.\nYour Response: ";
+		cout << endl << "Type 'look' to see the deck, the letter(s) of the card(s) you want to keep or just press enter to discard all.\nYour Response: ";
 		getline(cin, input2);
 		while (input2.find_first_of("ABCDEabcde") == std::string::npos && input2 != "") {
-			cout << "\nSorry invalid choice.\nYour Response: ";
-			getline(cin, input2);
+			if (input2 == "look"){ 
+				print(InDeck);
+				print_hand(Hand);
+				cout << endl << "Type 'look' to see the deck, the letter(s) of the card(s) you want to keep or just press enter to discard all.\nYour Response: ";
+				getline(cin, input2);
+			}
+			else {
+				cout << "\nSorry invalid choice.\nYour Response: ";
+				getline(cin, input2);
+			}
 		}
 		if (input2.find_first_of("Aa") == std::string::npos) { draw_card(InDeck, 0); }
 		if (input2.find_first_of("Bb") == std::string::npos) { draw_card(InDeck, 1); }
@@ -193,6 +216,7 @@ void play_game(deck* currDeck, int* currMoney) {
 		if (input2.find_first_of("Dd") == std::string::npos) { draw_card(InDeck, 3); }
 		if (input2.find_first_of("Ee") == std::string::npos) { draw_card(InDeck, 4); }
 		print_hand(Hand);
+		*currMoney = *currMoney + win_condition(Hand);
 	}
 }
 
@@ -211,6 +235,113 @@ void remove_card_in_deck(int index){
 	InDeck->count--;
 }
 
+int win_condition(hand* currHand) {
+	int cloneCount;
+	bool straight = false;
+	bool flush = false;
+	int thisIndex;
+	hand* temp = currHand;
+	hand* orderedHand = new hand;
+	orderedHand->array = new int[5];
+
+	for (int j = 0; j < 5; j++) {
+		int min = 1000;
+		for (int i = 0; i < 5; i++) {
+			if (temp->array[i] < min) {
+				min = temp->array[i];
+				thisIndex = i;
+			}
+		}
+		orderedHand->array[j] = min;
+		temp->array[thisIndex] = 2000; 
+	}
+	switch (orderedHand->array[0] % 4) {
+		case 0:
+			if (orderedHand->array[0] == 32 && orderedHand->array[1] == 36
+				&& orderedHand->array[0] == 40 && orderedHand->array[0] ==
+				44 && orderedHand->array[0] == 48) {
+				cout << endl << "Congratulations! You got a Royal Flush and earned $800!" << endl;
+				return 800;
+			}
+		case 1:
+			if (orderedHand->array[0] == 33 && orderedHand->array[1] == 37
+				&& orderedHand->array[0] == 41 && orderedHand->array[0] ==
+				45 && orderedHand->array[0] == 49) {
+				cout << endl << "Congratulations! You got a Royal Flush and earned $800!" << endl;
+				return 800;
+			}
+		case 2:
+			if (orderedHand->array[0] == 34 && orderedHand->array[1] == 38
+				&& orderedHand->array[0] == 42 && orderedHand->array[0] ==
+				46 && orderedHand->array[0] == 50) { 
+				cout << endl << "Congratulations! You got a Royal Flush and earned $800!" << endl;
+				return 800; 
+			}
+		case 3:
+			if (orderedHand->array[0] == 35 && orderedHand->array[1] == 39
+				&& orderedHand->array[0] == 43 && orderedHand->array[0] ==
+				47 && orderedHand->array[0] == 51) { 
+				cout << endl << "Congratulations! You got a Royal Flush and earned $800!" << endl;
+				return 800; 
+			}
+	}
+	if ((Hand->array[0] % 4) == (Hand->array[1] % 4) == (Hand->array[2] % 4) 
+		== (Hand->array[3] % 4) == (Hand->array[4] % 4)) { flush = true; }
+	else { flush = false; }
+	if ((orderedHand->array[0] / 4) + 4 == (orderedHand->array[1] / 4) + 3 ==
+		(orderedHand->array[2] / 4) + 2 == (orderedHand->array[3] / 4) + 1 ==
+		orderedHand->array[4] / 4) { straight = true; }
+	else { straight = false; }
+	cloneCount = 0;
+	for (int m = 0; m < 5; m++) {
+		if (orderedHand->array[m] / 4 == orderedHand->array[2] / 4) { cloneCount++; }
+	}
+	if (straight && flush) { 
+		cout << endl << "Congratulations! You got a Straight Flush and earned $50!" << endl;
+		return 50; 
+	}
+	if (cloneCount == 4) { 
+		cout << endl << "Congratulations! You got a Four of a Kind and earned $25!" << endl; 
+		return 25; 
+	}
+	if (cloneCount == 3 && orderedHand->array[0] / 4 == orderedHand->array[1] / 4 && 
+		orderedHand->array[3] / 4 == orderedHand->array[4] / 4) { 
+		cout << endl << "Congratulations! You got a Full House and earned $9!" << endl; 
+		return 9;
+	}
+	if (flush) { 
+		cout << endl << "Congratulations! You got a Flush and earned $6!" << endl;
+		return 6; 
+	}
+	if (straight) { 
+		cout << endl << "Congratulations! You got a Straight and earned $4!" << endl; 
+		return 4; 
+	}
+	if (cloneCount == 3) { 
+		cout << endl << "Congratulations! You got a 3 of a Kind and earned $3!" << endl;
+		return 3; 
+	}
+	if (orderedHand->array[0] / 4 == orderedHand->array[1] / 4 && orderedHand->array[2] / 4 == orderedHand->array[3] / 4) { 
+		cout << endl << "Congratulations! You got a Two Pair and earned $2!" << endl;
+		return 2; 
+	}
+	if (orderedHand->array[0] / 4 == orderedHand->array[1] / 4 && orderedHand->array[3] / 4 == orderedHand->array[4] / 4) { 
+		cout << endl << "Congratulations! You got a Two Pair and earned $2!" << endl; 
+		return 2; 
+	}
+	if (orderedHand->array[1] / 4 == orderedHand->array[2] / 4 && orderedHand->array[3] / 4 == orderedHand->array[4] / 4) { 
+		cout << endl << "Congratulations! You got a Two Pair and earned $2!" << endl; 
+		return 2;
+	}
+	if ((orderedHand->array[0] / 4 == orderedHand->array[1] / 4 && orderedHand->array[0] > 35) || (orderedHand->array[1] / 4
+		== orderedHand->array[2] / 4 && orderedHand->array[1] > 35) || (orderedHand->array[2] / 4 == orderedHand->array[3] / 4
+		&& orderedHand->array[2] > 35) || (orderedHand->array[3] / 4 == orderedHand->array[4] / 4 && orderedHand->array[3] > 35)) {
+		cout << endl << "Congratulations! You got a Pair and earned $1!" << endl;
+		return 1;
+	}
+	return 0;
+}
+
 void print(deck* thisDeck) {
 	card* temp = Deck->head;
 	cout << endl << "Cards in Deck:" << endl;
@@ -218,7 +349,7 @@ void print(deck* thisDeck) {
 		for (int j = 0; j < thisDeck->count; j++) {
 			if (i == thisDeck->array[j]) {
 				switch (temp->value){
-					case 1:
+					case 14:
 						cout << "Ace of " << temp->suit << endl;
 						break;
 					case 11:
@@ -265,7 +396,7 @@ void print_hand(hand* currHand) {
 			break;
 		}
 		switch (temp->value) {
-		case 1:
+		case 14:
 			cout << "Ace of " << temp->suit;
 			break;
 		case 11:
@@ -288,7 +419,7 @@ void print_hand(hand* currHand) {
 		if (i == 4 && input2.find_first_of("Ee") != std::string::npos) { cout << " (kept)"; counter++; }
 		cout << endl;
 	}
-	if (counter == 0 && input2 != "Q") { cout << endl << "You discarded all cards" << endl; }
+	if (counter == 0 && (input2 != "Q" && input2 != "look")) { cout << endl << "You discarded all cards" << endl; }
 	else if (counter == 1) { cout << endl << "You kept 1 card" << endl; }
 	else if (counter == 5) { cout << endl << "You kept all cards" << endl; }
 	else if (counter == 0) { cout << ""; }
