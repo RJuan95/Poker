@@ -37,12 +37,14 @@ void draw_card(deck*, int);
 void remove_card_in_deck(int);
 void print(deck*);
 void print_hand(hand*);
+
 int* money;
 bool keepPlaying;
 deck* Deck;
 deck* InDeck;
 hand* Hand;
 string input;
+string input2;
 
 int main()
 {
@@ -163,7 +165,7 @@ hand* create_hand() {
 void play_game(deck* currDeck, int* currMoney) {
 	*currMoney = *currMoney - 1;
 	input = "none";
-	cout << "You currently have $" << *currMoney << " after paying $1 to play this round." << endl;
+	cout << endl << "You currently have $" << *currMoney << " after paying $1 to play this round." << endl;
 	cout << endl << "type 'deck' to see the deck or 'play' to start a new round." << endl << "Your response : ";
 	while (input == "none") {
 		getline(cin, input);
@@ -172,9 +174,24 @@ void play_game(deck* currDeck, int* currMoney) {
 			input = "none"; 
 		}
 	}
-	if (input == "deck") { print(InDeck); }
+	input2 = "Q";
+	if (input == "deck") { 
+		print(InDeck);
+	}
 	else if (input == "play") {
 		for (int i = 0; i < 5; i++) { draw_card(InDeck, i); }
+		print_hand(Hand);
+		cout << endl << "Type in the letter(s) of the card(s) you want to keep or just press enter to discard all.\nYour Response: ";
+		getline(cin, input2);
+		while (input2.find_first_of("ABCDEabcde") == std::string::npos && input2 != "") {
+			cout << "\nSorry invalid choice.\nYour Response: ";
+			getline(cin, input2);
+		}
+		if (input2.find_first_of("Aa") == std::string::npos) { draw_card(InDeck, 0); }
+		if (input2.find_first_of("Bb") == std::string::npos) { draw_card(InDeck, 1); }
+		if (input2.find_first_of("Cc") == std::string::npos) { draw_card(InDeck, 2); }
+		if (input2.find_first_of("Dd") == std::string::npos) { draw_card(InDeck, 3); }
+		if (input2.find_first_of("Ee") == std::string::npos) { draw_card(InDeck, 4); }
 		print_hand(Hand);
 	}
 }
@@ -196,7 +213,7 @@ void remove_card_in_deck(int index){
 
 void print(deck* thisDeck) {
 	card* temp = Deck->head;
-	cout << "Cards in Deck:" << endl;
+	cout << endl << "Cards in Deck:" << endl;
 	for (int i = 0; i < 52; i++) { 
 		for (int j = 0; j < thisDeck->count; j++) {
 			if (i == thisDeck->array[j]) {
@@ -225,7 +242,8 @@ void print(deck* thisDeck) {
 }
 
 void print_hand(hand* currHand) {
-	cout << "Your Hand:" << endl;
+	int counter = 0;
+	cout << endl << "Your Hand:" << endl;
 	for (int i = 0; i < 5; i++) {
 		card* temp = Deck->head;
 		for (int j = 0; j < currHand->array[i]; j++) { temp = temp->next; }
@@ -248,21 +266,31 @@ void print_hand(hand* currHand) {
 		}
 		switch (temp->value) {
 		case 1:
-			cout << "Ace of " << temp->suit << endl;
+			cout << "Ace of " << temp->suit;
 			break;
 		case 11:
-			cout << "Jack of " << temp->suit << endl;
+			cout << "Jack of " << temp->suit;
 			break;
 		case 12:
-			cout << "Queen of " << temp->suit << endl;
+			cout << "Queen of " << temp->suit;
 			break;
 		case 13:
-			cout << "King of " << temp->suit << endl;
+			cout << "King of " << temp->suit;
 			break;
 		default:
-			cout << temp->value << " of " << temp->suit << endl;
+			cout << temp->value << " of " << temp->suit;
 			break;
 		}
-
+		if (i == 0 && input2.find_first_of("Aa") != std::string::npos) { cout << " (kept)"; counter++; }
+		if (i == 1 && input2.find_first_of("Bb") != std::string::npos) { cout << " (kept)"; counter++; }
+		if (i == 2 && input2.find_first_of("Cc") != std::string::npos) { cout << " (kept)"; counter++; }
+		if (i == 3 && input2.find_first_of("Dd") != std::string::npos) { cout << " (kept)"; counter++; }
+		if (i == 4 && input2.find_first_of("Ee") != std::string::npos) { cout << " (kept)"; counter++; }
+		cout << endl;
 	}
+	if (counter == 0 && input2 != "Q") { cout << endl << "You discarded all cards" << endl; }
+	else if (counter == 1) { cout << endl << "You kept 1 card" << endl; }
+	else if (counter == 5) { cout << endl << "You kept all cards" << endl; }
+	else if(counter == 0){}
+	else { cout << endl << "You kept " << counter << " cards" << endl; }
 }
