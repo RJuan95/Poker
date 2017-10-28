@@ -192,11 +192,15 @@ void play_game(deck* currDeck, int* currMoney) {
 	input = "none";
 	//checks for user input and then acts accordingly
 	cout << endl << "You currently have $" << *currMoney << " after paying $1 to play this round." << endl;
-	cout << endl << "type 'play' to start the round, 'swap' for testing purposes or 'quit' to exit." << endl << "Your response : ";
+	cout << endl << "Type 'look' to see the deck, 'play' to start the round, 'swap' for testing purposes or 'quit' to exit." << endl << "Your response : ";
 	while (input == "none") {
 		getline(cin, input);
-		if (input != "quit" && input != "play" && input != "swap") { 
-			cout << "Sorry that is not a valid response. Try again." << endl << "Your response: ";
+		if (input != "quit" && input != "play" && input != "swap") {
+			if (input == "look"){
+				print(InDeck);
+				cout << endl << "Type 'look' to see the deck, 'play' to start the round, 'swap' for testing purposes or 'quit' to exit." << endl << "Your response : ";
+			}
+			else { cout << endl << "Sorry that is not a valid response. Try again." << endl << "Your response: "; }
 			input = "none"; 
 		}
 	}
